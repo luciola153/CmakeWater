@@ -1,0 +1,8 @@
+CompileFlags:
+  CompilationDatabase: build/Debug
+
+Diagnostics:
+  UnusedIncludes: None
+  Suppress:
+    - missing-braces
+    - missing-field-initializers
