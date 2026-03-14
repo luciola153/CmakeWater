@@ -6,7 +6,10 @@ void APP_Init(void)        // 状态机初始化
 	UART_DMA_Init();
     timer_init();
     OLED_Init();
+    motor_init();
+    motor_pwm_set(1, 1500);
     delay_ms(3000);
+
 
 }
 
@@ -60,7 +63,21 @@ void OLED_Show(void)
     if(OLED_Update_flag == 1)
     {
         OLED_Clear();
-        OLED_ShowNum(0, 0, Time_1s_count, 4, OLED_8X16);
+        if (gyro_angle_valid)
+        {
+            OLED_ShowString(0, 0, "X:", OLED_8X16);
+            OLED_ShowFloatNum(16, 0, gyro_roll_deg, 3, 2, OLED_8X16);
+
+            OLED_ShowString(0, 16, "Y:", OLED_8X16);
+            OLED_ShowFloatNum(16, 16, gyro_pitch_deg, 3, 2, OLED_8X16);
+
+            OLED_ShowString(0, 32, "Z:", OLED_8X16);
+            OLED_ShowFloatNum(16, 32, gyro_yaw_deg, 3, 2, OLED_8X16);
+        }
+        else
+        {
+            OLED_ShowString(0, 0, "GYRO WAIT...", OLED_8X16);
+        }
         OLED_Update();
         OLED_Update_flag = 0;
     }

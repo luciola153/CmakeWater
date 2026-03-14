@@ -58,6 +58,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     NVIC/uart_execute.c
     hardware/APP_MAIN.c
     hardware/task_execute.c
+    hardware/motor.c
 )
 
 # Add include paths

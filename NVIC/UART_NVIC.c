@@ -41,9 +41,11 @@ uint8_t dma_rx_buf4[RX_BUFFER_SIZE];
 uint8_t dma_rx_buf5[RX_BUFFER_SIZE];
 uint8_t dma_rx_buf6[RX_BUFFER_SIZE];
 
-static uint8_t usart2_temp_buf[8];
-static uint16_t usart2_index = 0;
-static uint8_t usart2_frame_valid = 0;
+static uint16_t usart2_expected_frame_len = 0;
+static uint32_t usart2_query_tick_10ms = 0;
+static uint8_t usart2_wait_reply = 0;
+static volatile uint8_t usart2_query_due_flag = 0;
+static const uint8_t gyro_modbus_query_cmd[8] = {0x50, 0x03, 0x00, 0x30, 0x00, 0x30, 0x48, 0x50};
 
 // 初始化 DMA 接收
 void UART_DMA_Init(void)
@@ -162,71 +164,163 @@ static void parse_no_head(
     }
 }
 
-// 解析固定帧头 + 固定长度的协议，适用于 Modbus 设备
-static void parse_fixed_head_fixed_len(
+static uint16_t modbus_crc16(const uint8_t *data, uint16_t len)
+{
+    uint16_t crc = 0xFFFF;
+    for (uint16_t i = 0; i < len; i++)
+    {
+        crc ^= data[i];
+        for (uint8_t j = 0; j < 8; j++)
+        {
+            if (crc & 0x0001)
+            {
+                crc = (crc >> 1) ^ 0xA001;
+            }
+            else
+            {
+                crc >>= 1;
+            }
+        }
+    }
+    return crc;
+}
+
+static float gyro_raw_to_deg(int16_t raw)
+{
+    float deg = (float)raw * 180.0f / 32768.0f;
+    if (deg > 180.0f)
+    {
+        deg -= 360.0f;
+    }
+    else if (deg < -180.0f)
+    {
+        deg += 360.0f;
+    }
+    return deg;
+}
+
+// 解析陀螺仪 Modbus 帧（地址0x50，功能码0x03，动态长度）
+static void parse_gyro_modbus_stream(
     uint8_t byte,
-    uint8_t *temp_buf,          // 临时接收缓冲（最长 7 字节）
-    uint16_t *index,            // 当前已接收字节数
-    uint8_t *frame_valid,       // 帧是否有效标志（根据前 3 字节判断）
+    uint8_t *temp_buf,
+    uint16_t *index,
+    uint16_t *expected_len,
     Serial_RxPacket *pkt,
-    int idx,
-    uint16_t fixed_len)         // 固定帧长度
+    int idx)
 {
     if (*index == 0)
     {
-        // 等待帧头 0x01
-        if (byte == 0x01)
+        if (byte == 0x50)
         {
             temp_buf[0] = byte;
             *index = 1;
-            *frame_valid = 0; // 标记为无效帧
+            *expected_len = 0;
         }
-        // 其他字节丢弃
+        return;
     }
-    else
+
+    if (*index >= RX_BUFFER_SIZE)
     {
-        // 已经收到帧头，继续接收
-        if (*index < fixed_len)
+        *index = 0;
+        *expected_len = 0;
+        return;
+    }
+
+    temp_buf[*index] = byte;
+    (*index)++;
+
+    if (*index == 2 && temp_buf[1] != 0x03)
+    {
+        *index = 0;
+        *expected_len = 0;
+        return;
+    }
+
+    if (*index == 3)
+    {
+        uint8_t byte_count = temp_buf[2];
+        uint16_t frame_len = (uint16_t)byte_count + 5u; // addr+func+byteCount+data+crc(2)
+        if (frame_len > RX_BUFFER_SIZE || byte_count < 32u) // 至少要覆盖XYZ角度字节
         {
-            temp_buf[*index] = byte;
-            (*index)++;
-
-            // 收到第 3 个字节时判断是否为合法 Modbus 帧
-            if (*index == 3)
-            {
-                if (temp_buf[1] == 0x03 && temp_buf[2] == 0x02)
-                {
-                    *frame_valid = 1; // 标记为有效帧
-                }
-                else
-                {
-                    *frame_valid = 0; // 非法帧，后续仍然接收但标记无效
-                }
-            }
-
-            // 接收满 fixed_len 字节
-            if (*index >= fixed_len)
-            {
-                if (*frame_valid)
-                {
-                    // 只解析距离值（第 4、5 字节）
-                    distance = (temp_buf[3] << 8) | temp_buf[4];
-                    memcpy(pkt[idx].Rx2, temp_buf, fixed_len);
-                    pkt[idx].number_finall = fixed_len;
-                    pkt[idx].rx_finall_flag = 1;
-                }
-
-                // 重置状态机
-                *index = 0;
-                *frame_valid = 0;
-            }
+            *index = 0;
+            *expected_len = 0;
         }
         else
         {
-            // 长度溢出，丢弃本帧
-            *index = 0;
-            *frame_valid = 0;
+            *expected_len = frame_len;
         }
+        return;
+    }
+
+    if (*expected_len > 0 && *index >= *expected_len)
+    {
+        uint16_t crc_recv = (uint16_t)temp_buf[*expected_len - 2] |
+                            ((uint16_t)temp_buf[*expected_len - 1] << 8);
+        uint16_t crc_calc = modbus_crc16(temp_buf, *expected_len - 2);
+
+        if (crc_calc == crc_recv)
+        {
+            // 角度数据位于数据区第26~31字节（示例帧: 00 A3 FF CB 9B 30）
+            const uint16_t base = 3; // 跳过 addr/func/bytecount
+            int16_t roll_raw  = (int16_t)(((uint16_t)temp_buf[base + 26] << 8) | temp_buf[base + 27]);
+            int16_t pitch_raw = (int16_t)(((uint16_t)temp_buf[base + 28] << 8) | temp_buf[base + 29]);
+            int16_t yaw_raw   = (int16_t)(((uint16_t)temp_buf[base + 30] << 8) | temp_buf[base + 31]);
+
+            gyro_roll_raw = roll_raw;
+            gyro_pitch_raw = pitch_raw;
+            gyro_yaw_raw = yaw_raw;
+            gyro_roll_deg = gyro_raw_to_deg(roll_raw);
+            gyro_pitch_deg = gyro_raw_to_deg(pitch_raw);
+            gyro_yaw_deg = gyro_raw_to_deg(yaw_raw);
+            gyro_angle_valid = 1;
+
+            memcpy(pkt[idx].Rx2, temp_buf, *expected_len);
+            pkt[idx].number_finall = *expected_len;
+            pkt[idx].rx_finall_flag = 1;
+            usart2_wait_reply = 0;
+        }
+
+        *index = 0;
+        *expected_len = 0;
+    }
+}
+
+void Gyro_Modbus_RequestXYZ(void)
+{
+    if (usart2_wait_reply)
+    {
+        return;
+    }
+
+    // RS485方向控制：拉高发送，发送完成后拉低回到接收
+    PCout(4) = 1;
+    if (HAL_UART_Transmit(&huart2, (uint8_t *)gyro_modbus_query_cmd, sizeof(gyro_modbus_query_cmd), 20) == HAL_OK)
+    {
+        usart2_wait_reply = 1;
+        usart2_query_tick_10ms = time;
+    }
+    PCout(4) = 0;
+}
+
+void Gyro_Modbus_Trigger10ms(void)
+{
+    // 由10ms定时器节拍置位，请求下一次查询
+    usart2_query_due_flag = 1;
+}
+
+void Gyro_Modbus_Poll(void)
+{
+    // 超时保护：约300ms未收到应答则允许重发
+    if (usart2_wait_reply && (uint32_t)(time - usart2_query_tick_10ms) > 30u)
+    {
+        usart2_wait_reply = 0;
+    }
+
+    // 一发一收制：只有收到定时器触发，且当前不等待应答时才发送
+    if (usart2_query_due_flag && !usart2_wait_reply)
+    {
+        usart2_query_due_flag = 0;
+        Gyro_Modbus_RequestXYZ();
     }
 }
 
@@ -245,11 +339,12 @@ void UART_IDLE_Callback(UART_HandleTypeDef *huart, uint8_t *buf, uint16_t size)
         }
         else if (huart->Instance == USART2)
         {
-            parse_fixed_head_fixed_len(
-				byte,
-				usart2_temp_buf, &usart2_index, &usart2_frame_valid,
-				RXdata_2, 1,
-				7); // Modbus 固定帧长 7 字节
+            parse_gyro_modbus_stream(
+                byte,
+                uart2_temp_frame_buffer,
+                &uart2_current_frame_index,
+                &usart2_expected_frame_len,
+                RXdata_2, 1);
         }
         else if (huart->Instance == USART3)
         {
@@ -302,6 +397,7 @@ void parse_uart_frames(void)
 
 void main_loop(void)
 {
+    Gyro_Modbus_Poll();
     parse_uart_frames();
     process_uart_data(); // 在uart_execute.c 实现
 }

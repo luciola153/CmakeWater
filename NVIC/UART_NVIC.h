@@ -47,9 +47,12 @@ extern uint8_t dma_rx_buf4[RX_BUFFER_SIZE];
 extern uint8_t dma_rx_buf5[RX_BUFFER_SIZE];
 extern uint8_t dma_rx_buf6[RX_BUFFER_SIZE];
 
-// ��������
+// 函数声明
 void UART_DMA_Init(void);
 void UART_IDLE_Callback(UART_HandleTypeDef *huart, uint8_t *buf, uint16_t size);
+void Gyro_Modbus_RequestXYZ(void);
+void Gyro_Modbus_Trigger10ms(void);
+void Gyro_Modbus_Poll(void);
 void parse_uart_frames(void);
 void main_loop(void);
 

@@ -15,6 +15,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
         time++;
         Time_100ms++;
         Time_1s++;
+        Gyro_Modbus_Trigger10ms();
 
         // 100ms 对应的定时处理
         if (Time_100ms >= 10)

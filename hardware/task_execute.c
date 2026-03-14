@@ -4,7 +4,7 @@
 void run_mode_zero(void)
 {
     // 模式0任务
-//    motor1_pwm_set(1600);
+    motor_pwm_set(1, 1530);
     
 }
 
