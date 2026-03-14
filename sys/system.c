@@ -4,6 +4,7 @@
 uint32_t time;    //系统运行时间，单位：10ms
 uint16_t Time_100ms; //100ms定时器
 uint16_t Time_1s;    //1s定时器
+uint16_t Time_1s_count;   //1s计数器
 uint32_t time_b;
 
 //OLED更新标志位

@@ -1,20 +1,20 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file    stm32f4xx_it.c
-  * @brief   Interrupt Service Routines.
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2026 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file    stm32f4xx_it.c
+ * @brief   Interrupt Service Routines.
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2025 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
@@ -22,6 +22,7 @@
 #include "stm32f4xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "system.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -90,7 +91,7 @@ void NMI_Handler(void)
 
   /* USER CODE END NonMaskableInt_IRQn 0 */
   /* USER CODE BEGIN NonMaskableInt_IRQn 1 */
-   while (1)
+  while (1)
   {
   }
   /* USER CODE END NonMaskableInt_IRQn 1 */
@@ -320,7 +321,17 @@ void DMA1_Stream6_IRQHandler(void)
 void USART1_IRQHandler(void)
 {
   /* USER CODE BEGIN USART1_IRQn 0 */
+  if (__HAL_UART_GET_FLAG(&huart1, UART_FLAG_IDLE))
+  {
+    __HAL_UART_CLEAR_IDLEFLAG(&huart1);
+    uint16_t len = RX_BUFFER_SIZE - __HAL_DMA_GET_COUNTER(huart1.hdmarx);
+    if (len > 0)
+    { // 注意：防止 len=0 时传入无效数据
+      UART_IDLE_Callback(&huart1, dma_rx_buf1, len);
+    }
 
+      return; // 处理完 IDLE 中断后直接返回，不再走 HAL 默认处理
+    }
   /* USER CODE END USART1_IRQn 0 */
   HAL_UART_IRQHandler(&huart1);
   /* USER CODE BEGIN USART1_IRQn 1 */
@@ -334,7 +345,17 @@ void USART1_IRQHandler(void)
 void USART2_IRQHandler(void)
 {
   /* USER CODE BEGIN USART2_IRQn 0 */
+  if (__HAL_UART_GET_FLAG(&huart2, UART_FLAG_IDLE))
+  {
+    __HAL_UART_CLEAR_IDLEFLAG(&huart2);
+    uint16_t len = RX_BUFFER_SIZE - __HAL_DMA_GET_COUNTER(huart2.hdmarx);
+    if (len > 0)
+    { // 注意：防止 len=0 时传入无效数据
+      UART_IDLE_Callback(&huart2, dma_rx_buf2, len);
+    }
 
+    return; // 处理完 IDLE 中断后直接返回，不再走 HAL 默认处理
+  }
   /* USER CODE END USART2_IRQn 0 */
   HAL_UART_IRQHandler(&huart2);
   /* USER CODE BEGIN USART2_IRQn 1 */
@@ -348,7 +369,16 @@ void USART2_IRQHandler(void)
 void USART3_IRQHandler(void)
 {
   /* USER CODE BEGIN USART3_IRQn 0 */
-
+  if (__HAL_UART_GET_FLAG(&huart3, UART_FLAG_IDLE))
+  {
+    __HAL_UART_CLEAR_IDLEFLAG(&huart3);
+    uint16_t len = RX_BUFFER_SIZE - __HAL_DMA_GET_COUNTER(huart3.hdmarx);
+    if (len > 0)
+    { // 注意：防止 len=0 时传入无效数据
+      UART_IDLE_Callback(&huart3, dma_rx_buf3, len);
+    }
+    return; // 处理完 IDLE 中断后直接返回，不再走 HAL 默认处理
+  }
   /* USER CODE END USART3_IRQn 0 */
   HAL_UART_IRQHandler(&huart3);
   /* USER CODE BEGIN USART3_IRQn 1 */
@@ -376,7 +406,16 @@ void DMA1_Stream7_IRQHandler(void)
 void UART4_IRQHandler(void)
 {
   /* USER CODE BEGIN UART4_IRQn 0 */
-
+  if (__HAL_UART_GET_FLAG(&huart4, UART_FLAG_IDLE))
+  {
+    __HAL_UART_CLEAR_IDLEFLAG(&huart4);
+    uint16_t len = RX_BUFFER_SIZE - __HAL_DMA_GET_COUNTER(huart4.hdmarx);
+    if (len > 0)
+    { // 注意：防止 len=0 时传入无效数据
+      UART_IDLE_Callback(&huart4, dma_rx_buf4, len);
+    }
+    return; // 处理完 IDLE 中断后直接返回，不再走 HAL 默认处理
+  }
   /* USER CODE END UART4_IRQn 0 */
   HAL_UART_IRQHandler(&huart4);
   /* USER CODE BEGIN UART4_IRQn 1 */
@@ -390,7 +429,16 @@ void UART4_IRQHandler(void)
 void UART5_IRQHandler(void)
 {
   /* USER CODE BEGIN UART5_IRQn 0 */
-
+  if (__HAL_UART_GET_FLAG(&huart5, UART_FLAG_IDLE))
+  {
+    __HAL_UART_CLEAR_IDLEFLAG(&huart5);
+    uint16_t len = RX_BUFFER_SIZE - __HAL_DMA_GET_COUNTER(huart5.hdmarx);
+    if (len > 0)
+    { // 注意：防止 len=0 时传入无效数据
+      UART_IDLE_Callback(&huart5, dma_rx_buf5, len);
+    }
+    return; // 处理完 IDLE 中断后直接返回，不再走 HAL 默认处理
+  }
   /* USER CODE END UART5_IRQn 0 */
   HAL_UART_IRQHandler(&huart5);
   /* USER CODE BEGIN UART5_IRQn 1 */
@@ -474,7 +522,16 @@ void DMA2_Stream7_IRQHandler(void)
 void USART6_IRQHandler(void)
 {
   /* USER CODE BEGIN USART6_IRQn 0 */
-
+  if (__HAL_UART_GET_FLAG(&huart6, UART_FLAG_IDLE))
+  {
+    __HAL_UART_CLEAR_IDLEFLAG(&huart6);
+    uint16_t len = RX_BUFFER_SIZE - __HAL_DMA_GET_COUNTER(huart6.hdmarx);
+    if (len > 0)
+    { // 注意：防止 len=0 时传入无效数据
+      UART_IDLE_Callback(&huart6, dma_rx_buf6, len);
+    }
+    return; // 处理完 IDLE 中断后直接返回，不再走 HAL 默认处理
+  }
   /* USER CODE END USART6_IRQn 0 */
   HAL_UART_IRQHandler(&huart6);
   /* USER CODE BEGIN USART6_IRQn 1 */

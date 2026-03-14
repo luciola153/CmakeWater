@@ -22,16 +22,11 @@
 #include "timer.h"
 #include "sys.h"
 #include "OLED.h"
-//#include "app_main.h"
+#include "APP_MAIN.h"
 #include "delay.h"
-//#include "timer.h"
-//#include "task_execute.h"
-//#include "bsp_motor.h"
+#include "task_execute.h"
 #include "uart_execute.h"
-//#include "Emm_V5.h"
-//#include "pressADC.h"
-//#include "normal_motor.h"
-//#include "TOF.h"
+
 
 #include <stdio.h> 
 #include <stdint.h>
@@ -48,6 +43,7 @@ extern uint8_t OLED_Update_flag;   //OLED���±�־λ
 extern uint8_t OLED_Update_time;   //OLED���¼�ʱ��
 extern uint8_t run_mode;             //����ģʽѡ��
 extern uint16_t distance;
+extern uint16_t Time_1s_count;   //1s计数器
 
 
 

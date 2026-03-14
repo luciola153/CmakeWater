@@ -98,9 +98,7 @@ int main(void)
   MX_USART3_UART_Init();
   MX_USART6_UART_Init();
   /* USER CODE BEGIN 2 */
-  OLED_Init();
-  OLED_ShowString(0, 0, "Hello World", OLED_8X16);
-  OLED_Update();
+  APP_Init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -108,7 +106,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
+    APP_MAIN();
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */

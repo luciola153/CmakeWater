@@ -11,26 +11,26 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
     if (htim->Instance == htim6.Instance)
     {
-        //10ms��Ӧ����
+        // 10ms 对应的定时处理
         time++;
         Time_100ms++;
         Time_1s++;
 
-        //100ms��Ӧ����
+        // 100ms 对应的定时处理
         if (Time_100ms >= 10)
         {
             Time_100ms = 0;
            
         }
 
-        //1s��Ӧ����
+        // 1s 对应的定时处理
         if (Time_1s >= 100)
         {
             Time_1s = 0;
-            
+            Time_1s_count++;
         }
 
-        //OLEDˢ��������(20Hz)
+        // OLED 刷新定时控制（20Hz）
         if(OLED_Update_flag != 1 && OLED_Update_time < 5)
         {
             OLED_Update_time++;

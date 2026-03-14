@@ -56,6 +56,8 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     NVIC/timer.c
     NVIC/UART_NVIC.c
     NVIC/uart_execute.c
+    hardware/APP_MAIN.c
+    hardware/task_execute.c
 )
 
 # Add include paths
