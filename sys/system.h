@@ -27,6 +27,7 @@
 #include "task_execute.h"
 #include "uart_execute.h"
 #include "motor.h"
+#include "DeepSensor.h"
 
 #include <stdio.h> 
 #include <stdint.h>
@@ -51,6 +52,10 @@ extern volatile float gyro_roll_deg;     // X轴角度，单位°，范围约 -1
 extern volatile float gyro_pitch_deg;    // Y轴角度，单位°，范围约 -180~180
 extern volatile float gyro_yaw_deg;      // Z轴角度，单位°，范围约 -180~180
 extern volatile uint8_t gyro_angle_valid; // 角度数据有效标志：1=有新有效数据
+extern volatile float ms5837_pressure_mbar; // 深度传感器压力值，单位 mbar
+extern volatile float ms5837_temperature_c; // 深度传感器温度值，单位 °C
+extern volatile float ms5837_depth_m;       // 估算深度，单位 m（按淡水密度）
+extern volatile uint8_t ms5837_data_valid;  // 深度传感器数据有效标志
 
 
 

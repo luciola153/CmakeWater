@@ -29,6 +29,12 @@ volatile float gyro_pitch_deg = 0.0f;
 volatile float gyro_yaw_deg = 0.0f;
 volatile uint8_t gyro_angle_valid = 0;
 
+// MS5837 深度传感器计算结果
+volatile float ms5837_pressure_mbar = 0.0f;
+volatile float ms5837_temperature_c = 0.0f;
+volatile float ms5837_depth_m = 0.0f;
+volatile uint8_t ms5837_data_valid = 0;
+
 
 
 u32 myabs(long int a)

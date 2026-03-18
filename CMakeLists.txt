@@ -59,6 +59,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     hardware/APP_MAIN.c
     hardware/task_execute.c
     hardware/motor.c
+    hardware/DeepSensor.c
 )
 
 # Add include paths
